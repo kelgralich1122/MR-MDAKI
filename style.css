@@ -1,1 +1,55 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000005;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
+canvas {
+    display: block;
+}
+
+#ui-container {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    pointer-events: none; /* Allows mouse clicks to pass through to the 3D canvas */
+    z-index: 10;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+p {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+#playBtn {
+    pointer-events: auto; /* Enable clicking on the button */
+    background: #ff3366;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.6);
+    transition: 0.2s;
+}
+
+#playBtn:hover {
+    background: #ff194d;
+    transform: scale(1.05);
+}
