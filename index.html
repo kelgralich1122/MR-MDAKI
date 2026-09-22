@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Only For You ❤️</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Three.js r128 + OrbitControls (same CDN / version) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Background Music -->
+    <audio id="bgSong" loop preload="auto">
+        <source src="songs/track1.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Hidden reward song (plays when the puzzle is solved) -->
+    <audio id="secretSong" preload="auto">
+        <source src="songs/track2.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Stage 1: Proposal Card Overlay -->
+    <div class="overlay-wrapper" id="proposalOverlay">
+        <div class="card" id="proposalCard">
+            <div class="emoji-header" id="emojiHeader">🥺</div>
+            <h1 id="cardHeading">Hey My Love! ❤️</h1>
+            <p id="cardSubtext">I love you more than anything in this world. Will you be mine forever?</p>
+
+            <div class="button-group" id="buttonGroup">
+                <button id="yesBtn" class="btn btn-yes" type="button">Yes 💕</button>
+                <button id="noBtn" class="btn btn-no" type="button">No 💔</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stage 2: Interactive 3D World hint (title is now 3D inside the galaxy) -->
+    <div class="galaxy-ui hidden" id="galaxyUi">
+        <p class="galaxy-subtitle">Drag to rotate • Scroll / pinch all the way in</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
