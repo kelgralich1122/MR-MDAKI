@@ -1,323 +1,257 @@
-// --- Configurations & Asset Map ---
-const photos = [
-'pics/photo1.jpg',
-'pics/photo2.jpg',
-'pics/photo3.jpg',
-'pics/photo4.jpg',
-'pics/photo5.jpg',
-'pics/photo6.jpg'
-];
+// Register GSAP ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
-const noMessages = [
-{ title: "Are you sure? 🥺", text: "You mean the whole world to me. Please say yes!", emoji: "🥺" },
-{ title: "My heart is breaking... 💔", text: "I can't imagine a single day without you. Give us a chance!", emoji: "💔" },
-{ title: "Please don't leave me... 😭", text: "You're my everything, say yes and make me the happiest person alive!", emoji: "😭" },
-{ title: "Think again! 🌸", text: "Look at how much love is waiting for us!", emoji: "🥺" },
-{ title: "You're breaking my heart! 🥀", text: "I'm going to cry... Please click YES!", emoji: "😭" }
-];
-
-let noClickCount = 0;
-let isAudioPlaying = false;
-
-// UI Element References
-const proposalOverlay = document.getElementById('proposalOverlay');
-const cardHeading = document.getElementById('cardHeading');
-const cardSubtext = document.getElementById('cardSubtext');
-const emojiHeader = document.getElementById('emojiHeader');
-const yesBtn = document.getElementById('yesBtn');
-const noBtn = document.getElementById('noBtn');
-const bgSong = document.getElementById('bgSong');
-const galaxyUi = document.getElementById('galaxyUi');
-const musicToggle = document.getElementById('musicToggle');
-
-// --- Proposal Button Interactions ---
-noBtn.addEventListener('click', () => {
-noClickCount++;
-
-// Cycle guilt-trip content
-const index = Math.min(noClickCount - 1, noMessages.length - 1);
-cardHeading.innerText = noMessages[index].title;
-cardSubtext.innerText = noMessages[index].text;
-emojiHeader.innerText = noMessages[index].emoji;
-
-// Scale up YES button dynamically
-const currentSize = parseFloat(window.getComputedStyle(yesBtn).fontSize);
-const newSize = currentSize + 10;
-yesBtn.style.fontSize = `${newSize}px`;
-
-const padVertical = 12 + (noClickCount * 6);
-const padHorizontal = 28 + (noClickCount * 12);
-yesBtn.style.padding = `${padVertical}px ${padHorizontal}px`;
-
-// Shake card slightly
-document.getElementById('proposalCard').style.transform = `scale(${1 + noClickCount * 0.03})`;
-
-
+document.addEventListener('DOMContentLoaded', () => {
+    initScrollAnimations();
+    initAudioController();
+    initEnvelopeMechanics();
+    initDodgingButton();
+    initProposalActions();
 });
 
-yesBtn.addEventListener('click', () => {
-// 1. Trigger full-screen confetti burst
-triggerConfetti();
+// --- 1. Scroll-Driven Text Animations ---
+function initScrollAnimations() {
+    const scenes = document.querySelectorAll('.scroll-scene');
 
-// 2. Play background audio
-bgSong.play().then(() => {
-    isAudioPlaying = true;
-}).catch(err => console.log("Audio play allowed on user gesture: ", err));
+    scenes.forEach((scene) => {
+        const text = scene.querySelector('.narrative-text');
+        if (!text) return;
 
-// 3. Fade out overlay card
-proposalOverlay.classList.add('fade-out');
+        // Fade in & Translate up as scene enters center
+        gsap.fromTo(text,
+            { opacity: 0, y: 30 },
+            {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: scene,
+                    start: "top 75%",
+                    end: "top 25%",
+                    scrub: 0.8
+                }
+            }
+        );
 
-// 4. Reveal 3D HUD controls
-galaxyUi.classList.remove('hidden');
-
-// 5. Accelerate camera zoom into 3D Galaxy
-zoomCameraIntoGalaxy();
-
-
-});
-
-musicToggle.addEventListener('click', () => {
-if (isAudioPlaying) {
-bgSong.pause();
-musicToggle.innerText = "🎵 Play Music";
-isAudioPlaying = false;
-} else {
-bgSong.play();
-musicToggle.innerText = "⏸️ Pause Music";
-isAudioPlaying = true;
-}
-});
-
-function triggerConfetti() {
-const duration = 3.5 * 1000;
-const end = Date.now() + duration;
-
-(function frame() {
-    confetti({
-        particleCount: 6,
-        angle: 60,
-        spread: 60,
-        origin: { x: 0, y: 0.7 },
-        colors: ['#ff4b72', '#ff9a9e', '#ffffff', '#ff2a5f']
-    });
-    confetti({
-        particleCount: 6,
-        angle: 120,
-        spread: 60,
-        origin: { x: 1, y: 0.7 },
-        colors: ['#ff4b72', '#ff9a9e', '#ffffff', '#ff2a5f']
-    });
-
-    if (Date.now() < end) {
-        requestAnimationFrame(frame);
-    }
-}());
-
-
-}
-
-// --- WebGL / Three.js 3D Engine ---
-let scene, camera, renderer, controls;
-let starField, coreParticles, photoGroup;
-const photoSprites = [];
-
-function init3D() {
-const container = document.getElementById('canvas-container');
-
-// Scene & Camera
-scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x030308, 0.015);
-
-camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 5, 45); // Start slightly further back
-
-// Renderer
-renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-container.appendChild(renderer.domElement);
-
-// Orbit Controls
-controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.rotateSpeed = 0.8;
-controls.maxDistance = 80;
-controls.minDistance = 10;
-
-// Build Scene Components
-createStarfield();
-createGlowingCore();
-createPhotoGalaxy();
-
-// Resize Handler
-window.addEventListener('resize', onWindowResize);
-
-// Start Animation Loop
-animate();
-
-
-}
-
-// 1. Ambient Background Starfield
-function createStarfield() {
-const count = 3000;
-const geometry = new THREE.BufferGeometry();
-const positions = new Float32Array(count * 3);
-const colors = new Float32Array(count * 3);
-
-for (let i = 0; i < count * 3; i += 3) {
-    positions[i] = (Math.random() - 0.5) * 160;
-    positions[i + 1] = (Math.random() - 0.5) * 160;
-    positions[i + 2] = (Math.random() - 0.5) * 160;
-
-    colors[i] = 1.0;
-    colors[i + 1] = Math.random() * 0.6 + 0.4;
-    colors[i + 2] = Math.random() * 0.8 + 0.2;
-}
-
-geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-const material = new THREE.PointsMaterial({
-    size: 0.25,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.8
-});
-
-starField = new THREE.Points(geometry, material);
-scene.add(starField);
-
-
-}
-
-// 2. Central Glowing Particle Heart / Sphere
-function createGlowingCore() {
-const count = 2000;
-const geometry = new THREE.BufferGeometry();
-const positions = new Float32Array(count * 3);
-
-for (let i = 0; i < count; i++) {
-    // Spherical distribution with density near radius 6
-    const u = Math.random();
-    const v = Math.random();
-    const theta = u * 2.0 * Math.PI;
-    const phi = Math.acos(2.0 * v - 1.0);
-    const r = 5.5 * Math.cbrt(Math.random());
-
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = r * Math.cos(phi);
-}
-
-geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-const material = new THREE.PointsMaterial({
-    color: 0xff1a4b,
-    size: 0.35,
-    transparent: true,
-    opacity: 0.9,
-    blending: THREE.AdditiveBlending
-});
-
-coreParticles = new THREE.Points(geometry, material);
-scene.add(coreParticles);
-
-
-}
-
-// 3. Orbiting 3D Photo Sprites Ring
-function createPhotoGalaxy() {
-photoGroup = new THREE.Group();
-const textureLoader = new THREE.TextureLoader();
-const radius = 16;
-const totalItems = 12; // Cycle photo list to form a full ring
-
-for (let i = 0; i < totalItems; i++) {
-    const photoPath = photos[i % photos.length];
-    
-    textureLoader.load(photoPath, (texture) => {
-        const material = new THREE.SpriteMaterial({
-            map: texture,
-            transparent: true
+        // Fade out & Translate up further as scene leaves top
+        gsap.to(text, {
+            opacity: 0,
+            y: -30,
+            scrollTrigger: {
+                trigger: scene,
+                start: "center 30%",
+                end: "bottom top",
+                scrub: 0.8
+            }
         });
-        const sprite = new THREE.Sprite(material);
+    });
+}
 
-        // Scale sprite aspect ratio
-        sprite.scale.set(4.5, 6, 1);
+// --- 2. Audio Controller ---
+function initAudioController() {
+    const audio = document.getElementById('bgMusic');
+    const toggleBtn = document.getElementById('audioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioText = document.getElementById('audioText');
+    let isPlaying = false;
 
-        // Calculate cylindrical ring placement
-        const angle = (i / totalItems) * Math.PI * 2;
-        sprite.position.x = Math.cos(angle) * radius;
-        sprite.position.z = Math.sin(angle) * radius;
-        sprite.position.y = Math.sin(i * 1.5) * 2; // Subtle vertical wave
+    toggleBtn.addEventListener('click', () => {
+        if (isPlaying) {
+            audio.pause();
+            audioIcon.textContent = "🎵";
+            audioText.textContent = "Play Music";
+            isPlaying = false;
+        } else {
+            audio.play().then(() => {
+                audioIcon.textContent = "⏸️";
+                audioText.textContent = "Pause Music";
+                isPlaying = true;
+            }).catch(err => {
+                console.log("Audio play prevented: ", err);
+            });
+        }
+    });
 
-        sprite.userData = { angle: angle, radius: radius, ySpeed: Math.sin(i) * 0.002 };
+    window.playBackgroundMusic = () => {
+        if (!isPlaying) {
+            audio.play().then(() => {
+                audioIcon.textContent = "⏸️";
+                audioText.textContent = "Pause Music";
+                isPlaying = true;
+            }).catch(() => {});
+        }
+    };
+}
+
+// --- 3. 3D Envelope & Fullscreen Letter Mechanics ---
+function initEnvelopeMechanics() {
+    const envelopeWrapper = document.getElementById('envelopeWrapper');
+    const waxSeal = document.getElementById('waxSeal');
+    const envelopeFlap = document.getElementById('envelopeFlap');
+    const miniLetter = document.getElementById('miniLetter');
+    const tapToOpenText = document.getElementById('tapToOpenText');
+
+    const letterModal = document.getElementById('letterModal');
+    const letterCard = document.getElementById('letterCard');
+    const foldLetterBtn = document.getElementById('foldLetterBtn');
+    const letterParas = document.querySelectorAll('.letter-para');
+
+    let isEnvelopeOpened = false;
+
+    envelopeWrapper.addEventListener('click', () => {
+        if (isEnvelopeOpened) return;
+        isEnvelopeOpened = true;
+
+        if (window.playBackgroundMusic) window.playBackgroundMusic();
+
+        // Step 1: Hide tap text & Fade out Wax Seal
+        if (tapToOpenText) tapToOpenText.classList.add('opacity-0');
+        waxSeal.style.opacity = '0';
+        waxSeal.style.transform = 'translateX(-50%) scale(0.5)';
+
+        // Step 2: Open top flap (rotateX 180deg) after seal fades
+        setTimeout(() => {
+            envelopeFlap.style.transform = 'rotateX(180deg)';
+            envelopeFlap.style.zIndex = '1';
+
+            // Step 3: Slide mini letter upwards out of envelope
+            setTimeout(() => {
+                miniLetter.style.transform = 'translateY(-60px)';
+                miniLetter.style.zIndex = '4';
+
+                // Step 4: Expand mini letter into Fullscreen Letter Overlay Modal
+                setTimeout(() => {
+                    letterModal.classList.remove('pointer-events-none');
+                    letterModal.classList.remove('opacity-0');
+                    letterModal.classList.add('opacity-100');
+
+                    letterCard.classList.remove('scale-90');
+                    letterCard.classList.add('scale-100');
+
+                    // Step 5: Staggered Paragraph Fade-In Sequence
+                    letterParas.forEach((para, idx) => {
+                        setTimeout(() => {
+                            para.classList.remove('opacity-0', 'translate-y-3');
+                            para.classList.add('opacity-100', 'translate-y-0');
+                        }, idx * 600 + 300);
+                    });
+
+                }, 500);
+
+            }, 400);
+
+        }, 300);
+    });
+
+    // Fold Letter Interaction
+    foldLetterBtn.addEventListener('click', () => {
+        letterCard.classList.remove('scale-100');
+        letterCard.classList.add('scale-90');
         
-        photoGroup.add(sprite);
-        photoSprites.push(sprite);
+        letterModal.classList.remove('opacity-100');
+        letterModal.classList.add('opacity-0');
+
+        setTimeout(() => {
+            letterModal.classList.add('pointer-events-none');
+            // Dim envelope section slightly to indicate completed state
+            gsap.to('#envelopeSceneContainer', { opacity: 0.5, duration: 1 });
+        }, 500);
     });
 }
 
-scene.add(photoGroup);
+// --- 4. Dodging "No" Button Mechanics ---
+function initDodgingButton() {
+    const noBtn = document.getElementById('noBtn');
+    if (!noBtn) return;
 
+    const noTexts = [
+        "are you sure?",
+        "think again! 🌸",
+        "really sure? 🥺",
+        "give it another thought!",
+        "you can't say no! 😉",
+        "nice try! ❤️"
+    ];
 
-}
+    let textIndex = 0;
 
-// Camera transition when "Yes" is clicked
-function zoomCameraIntoGalaxy() {
-let targetZ = 28;
-let duration = 2000;
-let startZ = camera.position.z;
-let startTime = performance.now();
+    function dodgeButton(e) {
+        if (e) e.preventDefault();
 
-function step(currentTime) {
-    let elapsed = currentTime - startTime;
-    let progress = Math.min(elapsed / duration, 1);
-    
-    // Smooth easeOutCubic curve
-    let ease = 1 - Math.pow(1 - progress, 3);
-    camera.position.z = startZ + (targetZ - startZ) * ease;
+        // Change button text
+        textIndex = (textIndex + 1) % noTexts.length;
+        noBtn.textContent = noTexts[textIndex];
 
-    if (progress < 1) {
-        requestAnimationFrame(step);
+        // Calculate random bounding offsets (-120px to 120px)
+        const randomX = (Math.random() - 0.5) * 240;
+        const randomY = (Math.random() - 0.5) * 160;
+
+        // Animate dodge using GSAP spring/bounce easing
+        gsap.to(noBtn, {
+            x: randomX,
+            y: randomY,
+            duration: 0.35,
+            ease: "back.out(2)"
+        });
     }
-}
-requestAnimationFrame(step);
 
-
-}
-
-function onWindowResize() {
-camera.aspect = window.innerWidth / window.innerHeight;
-camera.updateProjectionMatrix();
-renderer.setSize(window.innerWidth, window.innerHeight);
+    noBtn.addEventListener('mouseover', dodgeButton);
+    noBtn.addEventListener('touchstart', dodgeButton, { passive: false });
+    noBtn.addEventListener('click', dodgeButton);
 }
 
-// Rendering & Physics Animation Loop
-function animate() {
-requestAnimationFrame(animate);
+// --- 5. Proposal "Yes" Click & Confetti State ---
+function initProposalActions() {
+    const yesBtn = document.getElementById('yesBtn');
+    const proposalContent = document.getElementById('proposalContent');
+    const successMessage = document.getElementById('successMessage');
 
-// Continuous rotation of galaxy elements
-if (starField) starField.rotation.y += 0.0003;
-if (coreParticles) coreParticles.rotation.y -= 0.0015;
+    yesBtn.addEventListener('click', () => {
+        if (window.playBackgroundMusic) window.playBackgroundMusic();
 
-// Orbit photo ring around the core
-if (photoGroup) {
-    photoGroup.children.forEach((sprite) => {
-        sprite.userData.angle += 0.0025; // Speed of orbit
-        sprite.position.x = Math.cos(sprite.userData.angle) * sprite.userData.radius;
-        sprite.position.z = Math.sin(sprite.userData.angle) * sprite.userData.radius;
-        sprite.position.y += Math.sin(Date.now() * 0.001 + sprite.userData.angle) * 0.005;
+        // Trigger Canvas Confetti Burst
+        if (typeof confetti === 'function') {
+            const duration = 4 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 7,
+                    angle: 60,
+                    spread: 65,
+                    origin: { x: 0, y: 0.7 },
+                    colors: ['#f43f5e', '#fb7185', '#ffffff', '#e11d48']
+                });
+                confetti({
+                    particleCount: 7,
+                    angle: 120,
+                    spread: 65,
+                    origin: { x: 1, y: 0.7 },
+                    colors: ['#f43f5e', '#fb7185', '#ffffff', '#e11d48']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        // Fade out question & buttons
+        gsap.to(proposalContent, {
+            opacity: 0,
+            y: -20,
+            duration: 0.6,
+            onComplete: () => {
+                proposalContent.classList.add('hidden');
+
+                // Show success celebration message
+                successMessage.classList.remove('hidden');
+                successMessage.classList.add('flex');
+                gsap.fromTo(successMessage,
+                    { opacity: 0, scale: 0.85 },
+                    { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out" }
+                );
+            }
+        });
     });
 }
-
-controls.update();
-renderer.render(scene, camera);
-
-
-}
-
-// Initialize WebGL on page load
-window.addEventListener('DOMContentLoaded', init3D);
